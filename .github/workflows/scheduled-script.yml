@@ -2,8 +2,8 @@ name: Run Python Script Daily
 
 on:
   schedule:
-    # Runs at 9:30 AM IST (which is 4:00 AM UTC due to offset)
-    - cron: '0 4 * * *'
+    # Runs at 9:32 AM IST (which is 4:02 AM UTC due to offset)
+    - cron: '2 4 * * *'
   workflow_dispatch:
 
 jobs:
@@ -27,14 +27,9 @@ jobs:
     - name: Run script
       run: python script.py
 
-    # --- NEW: Upload the CSV file as an artifact ---
     - name: Upload CSV file
       uses: actions/upload-artifact@v4
       with:
-        # The name of the artifact that will be shown in the UI
         name: daily-gainers-csv
-        # A path or glob pattern to the files you want to upload
-        # The *.csv pattern will upload any file ending with .csv
         path: ./*.csv
-        # Optional: artifacts are kept for 30 days by default
         retention-days: 30
