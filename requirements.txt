@@ -1,0 +1,2 @@
+nsetools==1.0.4
+requests==2.31.0
