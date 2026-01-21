@@ -1,6 +1,8 @@
 import time
 from datetime import datetime
 from nsetools import Nse
+import pytz
+import csv
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -10,6 +12,30 @@ def get_strongest_gainer():
     try:
         # Get all top gainers
         gainers = nse.get_top_gainers(index='ALL')
+
+
+        if gainers:
+
+            india_timezone = pytz.timezone('Asia/Kolkata')
+            current_time_india = datetime.now(india_timezone)
+            formatted_time = current_time_india.strftime('%d-%m-%Y_%I-%M-%S_%p')
+ 
+            csv_filename = f"top_gainers_{formatted_time}.csv"
+            
+            # Get the headers from the keys of the first dictionary
+            headers = gainers[0].keys()
+            
+            # Write data to the CSV file
+            with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=headers)
+                writer.writeheader()
+                writer.writerows(gainers)
+            
+            print(f"✅ Successfully saved all top gainers data to {csv_filename}")
+        else:
+            print("⚠️ No gainers data available to save to CSV.")
+
+
         
         if not gainers:
             print("No gainers data available")
@@ -41,33 +67,6 @@ def get_strongest_gainer():
                     if float(stock['ltp']) > float(stock['prev_price']) * 1.1:
                         score += 5
                 
-
-
-
-
-                # Check for gap up opening
-                if stock.get('open_price', 0) and stock.get('prev_price', 0):
-                    gap_up = (float(stock['open_price']) - float(stock['prev_price'])) / float(stock['prev_price']) * 100
-                    if gap_up > 5:
-                        score += 10
-                    elif gap_up > 3:
-                        score += 5
-                
-                # Check if trading near day's high
-                if stock.get('high_price', 0) and stock.get('ltp', 0):
-                    proximity_to_high = (float(stock['high_price']) - float(stock['ltp'])) / float(stock['high_price']) * 100
-                    if proximity_to_high < 2:
-                        score += 10
-                    elif proximity_to_high < 5:
-                        score += 5
-
-                # Add extra points if similar to pattern (12-18% gain at 9:35)
-                net_price = float(stock.get('net_price', stock.get('perChange', 0)))
-                if 12 <= net_price <= 18:
-                    score += 15  # Bonus for perfect pattern match
-
-
-
 
                 if score > best_score:
                     best_score = score
