@@ -1,2 +1,2 @@
-nsetools==1.0.4
-requests==2.31.0
+nsetools==2.0.1
+requests==2.32.5
