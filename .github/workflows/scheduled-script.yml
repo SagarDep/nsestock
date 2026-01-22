@@ -2,8 +2,8 @@ name: Run Python Script Daily
 
 on:
   schedule:
-    # Runs at 9:32 AM IST (which is 4:02 AM UTC due to offset)
-    - cron: '2 4 * * *'
+    # Runs at 9:30 AM UTC (slightly before 9:32 AM IST to account for queueing delay)
+    - cron: '30 3 * * *'
   workflow_dispatch:
 
 jobs:
@@ -23,6 +23,26 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+    
+    # --- ADDED STEPS FOR PRECISION START ---
+    - name: Set Timezone to IST
+      run: sudo timedatectl set-timezone Asia/Kolkata
+    
+    - name: Wait for exact 9:32 AM IST
+      run: |
+        TARGET_TIME="09:32:00"
+        NOW=$(date +%s)
+        TARGET_TIMESTAMP=$(date -d "$TARGET_TIME" +%s)
+        
+        if [ "$NOW" -gt "$TARGET_TIMESTAMP" ]; then
+          echo "Workflow started late, running immediately."
+        else
+          DELAY=$((TARGET_TIMESTAMP - NOW))
+          echo "Waiting for $DELAY seconds to reach $TARGET_TIME IST..."
+          sleep $DELAY
+        fi
+      shell: bash
+    # --- ADDED STEPS FOR PRECISION END ---
 
     - name: Run script
       run: python script.py
