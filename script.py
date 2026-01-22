@@ -6,6 +6,61 @@ import csv
 import warnings
 warnings.filterwarnings('ignore')
 
+
+def get_high_probability_gainers():
+    nse = Nse()
+    
+    # Fetching the list as per your instruction
+    # This list already contains open_price, ltp, high_price, etc.
+    top_gainers = nse.get_top_gainers(index='ALL')
+    
+    filtered_stocks = []
+
+    for stock in top_gainers:
+        # Extracting values from your specific dictionary structure
+        symbol = stock.get('symbol')
+        ltp    = float(stock.get('ltp', 0))
+        open_p = float(stock.get('open_price', 0))
+        high_p = float(stock.get('high_price', 0))
+        prev_p = float(stock.get('prev_price', 0))
+        change = float(stock.get('perChange', 0))
+        volume = float(stock.get('trade_quantity', 0))
+
+        if prev_p == 0: continue
+
+        # --- MOMENTUM LOGIC FOR 9:30 AM ---
+        
+        # 1. Price is holding above the opening bell (Critical for 9:30 AM)
+        is_bullish_intra = ltp >= open_p
+        
+        # 2. Near Day High: Shows that sellers aren't pushing the price down yet
+        # (Difference between Day High and LTP is less than 0.5%)
+        near_day_high = (high_p - ltp) / ltp < 0.005 if ltp > 0 else False
+        
+        # 3. Gap Up Sustainability: Stock opened higher than yesterday's close
+        gap_up = open_p > prev_p
+        
+        # Scoring
+        score = 0
+        if is_bullish_intra: score += 40
+        if near_day_high:    score += 40
+        if gap_up:           score += 20
+
+        # Filter: Only show 100/100 or 80/100 stocks for "High Probability"
+        if score >= 80:
+            filtered_stocks.append({
+                'Symbol': symbol,
+                'Price': ltp,
+                'Change %': change,
+                'Score': score,
+                'Volume': volume
+            })
+
+    # Sort by Score (100s first) and then by best percentage change
+    return sorted(filtered_stocks, key=lambda x: (x['Score'], x['Change %']), reverse=True)
+
+
+
 def get_strongest_gainer():
     nse = Nse()
     
@@ -127,6 +182,22 @@ def get_strongest_gainer():
 # Run the function
 if __name__ == "__main__":
     stock_name = get_strongest_gainer()
+
+    print("------------------------------- NEW ------------------------------")
+    print("--------------- 9:30 AM IST Momentum Analysis (Fast Scan) ---")
+    try:
+        results = get_high_probability_gainers()
+        
+        if not results:
+            print("No stocks met the 'High Probability' momentum criteria.")
+        else:
+            for s in results:
+                # Color/Status Indicator
+                status = "🚀 STRONG" if s['Score'] == 100 else "📈 TRENDING"
+                print(f"{status} | {s['Symbol']} | LTP: {s['Price']} | Change: {s['Change %']}%")
+                
+    except Exception as e:
+        print(f"Error: {e}")
     
     if stock_name:
         print(f"\nStock identified: {stock_name}")
